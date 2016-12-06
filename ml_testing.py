@@ -2,6 +2,7 @@ import sys, os, cv2
 import numpy as np
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.model_selection import train_test_split
+from sklearn import metrics
 
 try:
     seg_dir = os.path.abspath(sys.argv[1])
@@ -26,6 +27,7 @@ for subdir, dirs, files in os.walk(os.path.join('..', seg_dir)):
 
         labels.append(path_prefix)
 
+
         ret,thresh = cv2.threshold(img,127,255,0)
         (conts, heigh) = cv2.findContours(thresh.copy(),cv2.cv.CV_RETR_EXTERNAL, cv2.cv.CV_CHAIN_APPROX_SIMPLE )
         hull_area = 0.0
@@ -48,10 +50,12 @@ for subdir, dirs, files in os.walk(os.path.join('..', seg_dir)):
 
 # partition the data into training and testing splits, using 75%
 # of the data for training and the remaining 25% for testing
-print labels
 (trainFeat, testFeat, trainLabels, testLabels) = train_test_split(features, labels, test_size=0.25, random_state=42)
 
 model = KNeighborsClassifier(n_neighbors=4,	n_jobs=-1)
 model.fit(trainFeat, trainLabels)
 acc = model.score(testFeat, testLabels)
-print("[INFO] raw pixel accuracy: {:.2f}%".format(acc * 100))
+predLabels = model.predict(testFeat)
+f1 = metrics.f1_score(testLabels, predLabels,average='weighted')
+print("[INFO] accuracy: {:.2f}%".format(acc * 100))
+print("[INFO] f1: {:.2f}%".format(f1 * 100))
