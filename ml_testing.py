@@ -30,15 +30,13 @@ for subdir, dirs, files in os.walk(os.path.join('..', seg_dir)):
 
         ret,thresh = cv2.threshold(img,127,255,0)
         (conts, heigh) = cv2.findContours(thresh.copy(),cv2.cv.CV_RETR_EXTERNAL, cv2.cv.CV_CHAIN_APPROX_SIMPLE )
+
         hull_area = 0.0
         area = 0
         for c in conts:
             hull = cv2.convexHull(c)
             hull_area = hull_area + cv2.contourArea(hull)
             area = area + cv2.contourArea(c)
-        # print hull_area
-        # print area
-        # print ""
         features.append([area/hull_area])
         # features.append(cv2.contourArea(hull)/cv2.contourArea(cnts))
         # height = thresh.shape[0]
@@ -54,8 +52,24 @@ for subdir, dirs, files in os.walk(os.path.join('..', seg_dir)):
 
 model = KNeighborsClassifier(n_neighbors=4,	n_jobs=-1)
 model.fit(trainFeat, trainLabels)
-acc = model.score(testFeat, testLabels)
+# acc = model.score(testFeat, testLabels)
 predLabels = model.predict(testFeat)
-f1 = metrics.f1_score(testLabels, predLabels,average='weighted')
+acc = metrics.accuracy_score(testLabels, predLabels)
+pre = metrics.precision_score(testLabels,predLabels,average='macro')
+rec = metrics.recall_score(testLabels,predLabels,average='macro')
+f1 = metrics.f1_score(testLabels, predLabels,average="macro")
+precision, recall, fbeta, support = metrics.precision_recall_fscore_support(testLabels, predLabels,1,average='macro')
+i = 0
+while i < len(testLabels):
+    print testLabels[i] + " : " + predLabels[i]
+    print testLabels[i] == predLabels[i]
+    i = i + 1
+print precision
+print recall
+print fbeta
+print support
+
 print("[INFO] accuracy: {:.2f}%".format(acc * 100))
+print("[INFO] precision: {:.2f}%".format(pre * 100))
+print("[INFO] recall: {:.2f}%".format(rec * 100))
 print("[INFO] f1: {:.2f}%".format(f1 * 100))
