@@ -24,16 +24,17 @@ def area_over_hull_area(img):
     # cv2.drawContours(new,conts,-1,(0, 255, 0),3)
     # cv2.drawContours(new,hulls,-1,(0, 0, 255),3)
     # cv2.imshow('cont',new)
-    # cv2.waitKey(0)
+    # print area/hull_area
+    cv2.waitKey(0)
     return area/hull_area
 
-
+# look at number of votes
 def hough(img):
     edges = cv2.Canny((255-img),50,150,apertureSize = 3)
     print img.shape
     # cv2.imshow('edges', edges)
     # cv2.waitKey(0)
-    hLines = cv2.HoughLines(edges, 1,np.pi/180,200)
+    hLines = cv2.HoughLines(edges, 1,np.pi/180,10)
     height = img.shape[0]
     width = img.shape[1]
     new = np.zeros((height,width,3), np.uint8)
@@ -48,6 +49,66 @@ def hough(img):
 
     cv2.imshow('hough',new)
     cv2.waitKey(0)
+
+def corners(img):
+    cv2.imshow('orin',img)
+    cv2.waitKey(0)
+
+    out = cv2.cornerHarris(img,2,3,0.04)
+
+    dst = cv2.dilate(out,None)
+    ret, dst = cv2.threshold(dst,0.01*dst.max(),255,0)
+    dst = np.uint8(dst)
+
+    # find centroids
+    ret, labels, stats, centroids = cv2.cv.connectedComponentsWithStats(dst, 4,cv2.CV_325)
+
+    # define the criteria to stop and refine the corners
+    criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 100, 0.001)
+    corners = cv2.cornerSubPix(gray,np.float32(centroids),(5,5),(-1,-1),criteria)
+
+    # Now draw them
+    res = np.hstack((centroids,corners))
+    res = np.int0(res)
+    img[res[:,1],res[:,0]]=[0,0,255]
+    img[res[:,3],res[:,2]] = [0,255,0]
+
+
+    cv2.imshow('corner', img)
+    cv2.waitKey(0)
+
+def blob(img):
+    params = cv2.SimpleBlobDetector_Params()
+
+    params.minThreshold = 0
+    params.maxThreshold = 256
+
+    params.filterByArea = True
+    params.minArea = 3
+
+    # Filter by Circularity
+    params.filterByCircularity = False
+    # params.minCircularity = 0.1
+
+    # Filter by Convexity
+    params.filterByConvexity = False
+    # params.minConvexity = 0.5
+
+    # Filter by Inertia
+    params.filterByInertia =False
+    # params.minInertiaRatio = 0.5
+
+    detector = cv2.SimpleBlobDetector()
+
+    img = cv2.inRange(img, (100), (255))
+
+    reversemask = 255-img
+    keypoints = detector.detect(reversemask)
+    cv2.imshow('feed',cv2.drawKeypoints(img,keypoints,(0,255,0)))
+    cv2.waitKey(0)
+    # cv2.imshow('inv',reversemask)
+    # cv2.waitKey(0)
+    print keypoints
 
 
 def baseline(totLabels, labels, features):
@@ -118,7 +179,9 @@ def main():
 
             features.append([area_over_hull_area(img)])
 
-            
+            # experiment here
+            blob(img)
+
 
             # Used for zero value baseline testing
             if totLabels.count((path_prefix,0)) < 1:
