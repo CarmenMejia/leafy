@@ -1,5 +1,6 @@
 import sys, os, cv2
 import numpy as np
+import math
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.model_selection import train_test_split
 from sklearn import metrics
@@ -7,7 +8,7 @@ from sklearn import metrics
 
 # Caluclates convex hull area over contour area
 def area_over_hull_area(img):
-    ret,thresh = cv2.threshold(img,127,255,0)
+    ret,thresh = cv2.threshold(img,100,255,0)
     (conts, heigh) = cv2.findContours(thresh.copy(),cv2.cv.CV_RETR_EXTERNAL, cv2.cv.CV_CHAIN_APPROX_SIMPLE )
 
     hull_area = 0.0
@@ -25,8 +26,26 @@ def area_over_hull_area(img):
     # cv2.drawContours(new,hulls,-1,(0, 0, 255),3)
     # cv2.imshow('cont',new)
     # print area/hull_area
-    cv2.waitKey(0)
+    # cv2.waitKey(0)
     return area/hull_area
+
+def fittingEllipse(img):
+    ret,thresh = cv2.threshold(img,100,255,0)
+    (conts, heigh) = cv2.findContours(thresh.copy(),cv2.cv.CV_RETR_EXTERNAL, cv2.cv.CV_CHAIN_APPROX_SIMPLE )
+
+    ellipse_area = 0.0
+    area = 0.0
+    ellipses = []
+    for c in conts:
+        if (len(c)>4):
+            ellipse = cv2.fitEllipse(c)
+            ellipses.append(ellipse)
+            (x,y), (MA, ma), angle = ellipse
+            ellipse_area = ellipse_area + (math.pi * MA *ma)
+            area = area + cv2.contourArea(c)
+    print 'here'
+    return area/ellipse_area
+
 
 # look at number of votes
 def hough(img):
@@ -47,7 +66,7 @@ def hough(img):
             for x1,y1,x2,y2 in lines[0]:
                 cv2.line(new,(x1,y1),(x2,y2),(0,255,0),2)
 
-    cv2.imshow('hough',new)
+    cv2.imshow('hough',edges)
     cv2.waitKey(0)
 
 def corners(img):
@@ -177,10 +196,10 @@ def main():
             path_prefix = os.path.split(subdir)[-1]
             labels.append(path_prefix)
 
-            features.append([area_over_hull_area(img)])
+            features.append([area_over_hull_area(img), fittingEllipse(img)])
 
             # experiment here
-            blob(img)
+
 
 
             # Used for zero value baseline testing
