@@ -172,7 +172,7 @@ def main():
             features.append([area_over_hull_area(img), fittingEllipse(img)])
 
             # experiment here
-            arcLenth(img)
+            
 
 
             # Used for zero value baseline testing
