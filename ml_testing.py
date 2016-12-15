@@ -43,8 +43,20 @@ def fittingEllipse(img):
             (x,y), (MA, ma), angle = ellipse
             ellipse_area = ellipse_area + (math.pi * MA *ma)
             area = area + cv2.contourArea(c)
-    print 'here'
     return area/ellipse_area
+
+def arcLenth(img):
+    ret,thresh = cv2.threshold(img,100,255,0)
+    (conts, heigh) = cv2.findContours(thresh.copy(),cv2.cv.CV_RETR_EXTERNAL, cv2.cv.CV_CHAIN_APPROX_SIMPLE )
+
+    arcLengthTot = 0.0
+    areaTot = 0.0
+    arcLengths = []
+    for c in conts:
+        length = cv2.arcLength(c, True)
+        arcLengths.append(length)
+        arcLengthTot = arcLengthTot + length
+    return areaTot/arcLengthTot
 
 
 # look at number of votes
@@ -125,12 +137,12 @@ def blob(img):
     keypoints = detector.detect(reversemask)
     cv2.imshow('feed',cv2.drawKeypoints(img,keypoints,(0,255,0)))
     cv2.waitKey(0)
-    # cv2.imshow('inv',reversemask)
-    # cv2.waitKey(0)
+
     print keypoints
 
 
 def baseline(totLabels, labels, features):
+    # determines which label I have the most of
     maxL = 0
     for i in range(len(totLabels)):
         totLabels[i] = (totLabels[i][0], labels.count(totLabels[i][0]))
@@ -138,8 +150,7 @@ def baseline(totLabels, labels, features):
             maxL = totLabels[i][1]
             maxi = i
 
-    # partition the data into training and testing splits, using 75%
-    # of the data for training and the remaining 25% for testing
+    # splits data into training and testing features
     (trainFeat, testFeat, trainLabels, testLabels) = train_test_split(features, labels, test_size=0.25, random_state=42)
 
 
@@ -155,14 +166,13 @@ def baseline(totLabels, labels, features):
 
 def test(labels, features):
     (trainFeat, testFeat, trainLabels, testLabels) = train_test_split(features, labels, test_size=0.25, random_state=42)
-    model = KNeighborsClassifier(n_neighbors=7,	n_jobs=-1)
+    model = KNeighborsClassifier(n_neighbors=7)
     model.fit(trainFeat, trainLabels)
     predLabels = model.predict(testFeat)
     acc = metrics.accuracy_score(testLabels, predLabels)
     pre = metrics.precision_score(testLabels,predLabels,average='macro')
     rec = metrics.recall_score(testLabels,predLabels,average='macro')
     f1 = metrics.f1_score(testLabels, predLabels,average="macro")
-    precision, recall, fbeta, support = metrics.precision_recall_fscore_support(testLabels, predLabels,1,average='macro')
 
     print("[INFO] accuracy: {:.2f}%".format(acc * 100))
     print("[INFO] precision: {:.2f}%".format(pre * 100))
@@ -196,7 +206,8 @@ def main():
             path_prefix = os.path.split(subdir)[-1]
             labels.append(path_prefix)
 
-            features.append([area_over_hull_area(img), fittingEllipse(img)])
+            # gets features
+            features.append([area_over_hull_area(img), fittingEllipse(img), arcLenth(img)])
 
             # experiment here
 
