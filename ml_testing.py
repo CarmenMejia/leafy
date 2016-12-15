@@ -1,3 +1,4 @@
+# by Carmen Mejia
 import sys, os, cv2
 import numpy as np
 import math
@@ -29,6 +30,7 @@ def area_over_hull_area(img):
     # cv2.waitKey(0)
     return area/hull_area
 
+# area of fitEllipse over area of contour
 def fittingEllipse(img):
     ret,thresh = cv2.threshold(img,100,255,0)
     (conts, heigh) = cv2.findContours(thresh.copy(),cv2.cv.CV_RETR_EXTERNAL, cv2.cv.CV_CHAIN_APPROX_SIMPLE )
@@ -45,6 +47,8 @@ def fittingEllipse(img):
             area = area + cv2.contourArea(c)
     return area/ellipse_area
 
+# not Used
+# conour area over arc length
 def arcLenth(img):
     ret,thresh = cv2.threshold(img,100,255,0)
     (conts, heigh) = cv2.findContours(thresh.copy(),cv2.cv.CV_RETR_EXTERNAL, cv2.cv.CV_CHAIN_APPROX_SIMPLE )
@@ -56,10 +60,14 @@ def arcLenth(img):
         length = cv2.arcLength(c, True)
         arcLengths.append(length)
         arcLengthTot = arcLengthTot + length
+        areaTot = areaTot + cv2.contourArea(c)
     return areaTot/arcLengthTot
 
 
-# look at number of votes
+# not Used
+# number of Hough Lines found
+# Wasn't finding neough lines, mostly just one or two
+# from the leaf's stem
 def hough(img):
     edges = cv2.Canny((255-img),50,150,apertureSize = 3)
     print img.shape
@@ -81,66 +89,8 @@ def hough(img):
     cv2.imshow('hough',edges)
     cv2.waitKey(0)
 
-def corners(img):
-    cv2.imshow('orin',img)
-    cv2.waitKey(0)
 
-    out = cv2.cornerHarris(img,2,3,0.04)
-
-    dst = cv2.dilate(out,None)
-    ret, dst = cv2.threshold(dst,0.01*dst.max(),255,0)
-    dst = np.uint8(dst)
-
-    # find centroids
-    ret, labels, stats, centroids = cv2.cv.connectedComponentsWithStats(dst, 4,cv2.CV_325)
-
-    # define the criteria to stop and refine the corners
-    criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 100, 0.001)
-    corners = cv2.cornerSubPix(gray,np.float32(centroids),(5,5),(-1,-1),criteria)
-
-    # Now draw them
-    res = np.hstack((centroids,corners))
-    res = np.int0(res)
-    img[res[:,1],res[:,0]]=[0,0,255]
-    img[res[:,3],res[:,2]] = [0,255,0]
-
-
-    cv2.imshow('corner', img)
-    cv2.waitKey(0)
-
-def blob(img):
-    params = cv2.SimpleBlobDetector_Params()
-
-    params.minThreshold = 0
-    params.maxThreshold = 256
-
-    params.filterByArea = True
-    params.minArea = 3
-
-    # Filter by Circularity
-    params.filterByCircularity = False
-    # params.minCircularity = 0.1
-
-    # Filter by Convexity
-    params.filterByConvexity = False
-    # params.minConvexity = 0.5
-
-    # Filter by Inertia
-    params.filterByInertia =False
-    # params.minInertiaRatio = 0.5
-
-    detector = cv2.SimpleBlobDetector()
-
-    img = cv2.inRange(img, (100), (255))
-
-    reversemask = 255-img
-    keypoints = detector.detect(reversemask)
-    cv2.imshow('feed',cv2.drawKeypoints(img,keypoints,(0,255,0)))
-    cv2.waitKey(0)
-
-    print keypoints
-
-
+# gives baseline for the machine learning model
 def baseline(totLabels, labels, features):
     # determines which label I have the most of
     maxL = 0
@@ -164,6 +114,7 @@ def baseline(totLabels, labels, features):
     print("[INFO] zero rule base recall: {:.2f}%".format(rec * 100))
     print("[INFO] zero rule base f1: {:.2f}%".format(f1 * 100))
 
+# tests the machine learning model
 def test(labels, features):
     (trainFeat, testFeat, trainLabels, testLabels) = train_test_split(features, labels, test_size=0.25, random_state=42)
     model = KNeighborsClassifier(n_neighbors=7)
@@ -207,7 +158,7 @@ def main():
             labels.append(path_prefix)
 
             # gets features
-            features.append([area_over_hull_area(img), fittingEllipse(img), arcLenth(img)])
+            features.append([area_over_hull_area(img), fittingEllipse(img)])
 
             # experiment here
 
