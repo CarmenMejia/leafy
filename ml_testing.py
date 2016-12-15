@@ -130,13 +130,30 @@ def test(labels, features):
     print("[INFO] recall: {:.2f}%".format(rec * 100))
     print("[INFO] f1: {:.2f}%".format(f1 * 100))
 
+# validate the machine learning model
+def validate(labels, features, labelsVal, featuresVal):
+    model = KNeighborsClassifier(n_neighbors=7)
+    # fit to all the training data
+    model.fit(features, labels)
+    # predict for all the validation data
+    predLabels = model.predict(featuresVal)
+    acc = metrics.accuracy_score(labelsVal, predLabels)
+    pre = metrics.precision_score(labelsVal,predLabels,average='macro')
+    rec = metrics.recall_score(labelsVal,predLabels,average='macro')
+    f1 = metrics.f1_score(labelsVal, predLabels,average="macro")
+
+    print("[INFO] accuracy: {:.2f}%".format(acc * 100))
+    print("[INFO] precision: {:.2f}%".format(pre * 100))
+    print("[INFO] recall: {:.2f}%".format(rec * 100))
+    print("[INFO] f1: {:.2f}%".format(f1 * 100))
 
 def main():
-    # extract image directionr (should be segmented images)
+    # extract testing directory and validation directory (should be segmented images)
     try:
-        seg_dir = os.path.abspath(sys.argv[1])
+        test_dir = os.path.abspath(sys.argv[1])
+        validate_dir = os.path.abspath(sys.argv[2])
     except:
-        print "\nUSAGE: python create_labels.py segments_dir\n"
+        print "\nUSAGE: python create_labels.py test_dir validate_dir\n"
         sys.exit()
 
 
@@ -146,10 +163,9 @@ def main():
 
     labels = []
     features = []
-
     totLabels = []
 
-    for subdir, dirs, files in os.walk(os.path.join('..', seg_dir)):
+    for subdir, dirs, files in os.walk(os.path.join('..', test_dir)):
         for file in files:
             # loads image as grayscale
             img = cv2.imread(os.path.join(subdir, file),0)
@@ -168,10 +184,30 @@ def main():
             if totLabels.count((path_prefix,0)) < 1:
                 totLabels.append((path_prefix,0))
 
-    # compute baseline and test restuls and print out
-    baseline(totLabels,labels,features)
+
+    labelsVal = []
+    featuresVal = []
+    for subdir, dirs, files in os.walk(os.path.join('..', test_dir)):
+        for file in files:
+            # loads image as grayscale
+            img = cv2.imread(os.path.join(subdir, file),0)
+
+            path_prefix = os.path.split(subdir)[-1]
+            labelsVal.append(path_prefix)
+
+            # gets features
+            featuresVal.append([area_over_hull_area(img), fittingEllipse(img)])
+
+            # Used for zero value baseline testing
+            if totLabels.count((path_prefix,0)) < 1:
+                totLabels.append((path_prefix,0))
+
+    # compute baseline, test restuls, and validation results and print out
+    baseline(totLabels,labels + labelsVal,features + featuresVal)
     print ''
     test(labels,features)
+    print ''
+    validate(labels, features, labelsVal, featuresVal)
 
 
 if __name__=="__main__":
