@@ -7,7 +7,7 @@ from sklearn.model_selection import train_test_split
 from sklearn import metrics
 
 
-# Caluclates convex hull area over contour area
+# caluclates convex hull area over contour area
 def area_over_hull_area(img):
     ret,thresh = cv2.threshold(img,100,255,0)
     (conts, heigh) = cv2.findContours(thresh.copy(),cv2.cv.CV_RETR_EXTERNAL, cv2.cv.CV_CHAIN_APPROX_SIMPLE )
@@ -20,14 +20,6 @@ def area_over_hull_area(img):
         hulls.append(hull)
         hull_area = hull_area + cv2.contourArea(hull)
         area = area + cv2.contourArea(c)
-    # height = img.shape[0]
-    # width = img.shape[1]
-    # new = np.zeros((height,width,3), np.uint8)
-    # cv2.drawContours(new,conts,-1,(0, 255, 0),3)
-    # cv2.drawContours(new,hulls,-1,(0, 0, 255),3)
-    # cv2.imshow('cont',new)
-    # print area/hull_area
-    # cv2.waitKey(0)
     return area/hull_area
 
 # area of fitEllipse over area of contour
@@ -45,14 +37,6 @@ def fittingEllipse(img):
             (x,y), (MA, ma), angle = ellipse
             ellipse_area = ellipse_area + (math.pi * MA/2 *ma/2)
             area = area + cv2.contourArea(c)
-    # height = img.shape[0]
-    # width = img.shape[1]
-    # new = np.zeros((height,width,3), np.uint8)
-    # cv2.drawContours(new,conts,-1,(0, 255, 0),3)
-    # cv2.ellipse(new,ellipse,(0, 0, 255),3)
-    # cv2.imshow('cont',new)
-    # print area/ellipse_area
-    # cv2.waitKey(0)
     return area/ellipse_area
 
 # not Used
@@ -80,8 +64,6 @@ def arcLenth(img):
 def hough(img):
     edges = cv2.Canny((255-img),50,150,apertureSize = 3)
     print img.shape
-    # cv2.imshow('edges', edges)
-    # cv2.waitKey(0)
     hLines = cv2.HoughLines(edges, 1,np.pi/180,10)
     height = img.shape[0]
     width = img.shape[1]
@@ -111,7 +93,6 @@ def baseline(totLabels, labels, features):
 
     # splits data into training and testing features
     (trainFeat, testFeat, trainLabels, testLabels) = train_test_split(features, labels, test_size=0.25, random_state=42)
-
 
     baseLabels = [totLabels[maxi][0]]*len(testLabels)
     acc = metrics.accuracy_score(testLabels, baseLabels)
@@ -147,7 +128,7 @@ def main():
     try:
         seg_dir = os.path.abspath(sys.argv[1])
     except:
-        print "\nUSAGE: python create_labels.py segments_dir\n"
+        print "\[ERROR]: Segmented directory {} not available\n".format(sys.argv[1])
         sys.exit()
 
 
@@ -171,11 +152,7 @@ def main():
             # gets features
             features.append([area_over_hull_area(img), fittingEllipse(img)])
 
-            # experiment here
-            
-
-
-            # Used for zero value baseline testing
+            # used for zero value baseline testing
             if totLabels.count((path_prefix,0)) < 1:
                 totLabels.append((path_prefix,0))
 
